@@ -3,7 +3,7 @@ from sys import argv
 from libcompiler import *
 
 # Directory to be searched for code libraries.
-LIB_DIR = ""
+LIB_DIR = "code_lib/"
 
 HEAP_START = 64
 DEVICES = {
