@@ -1,58 +1,87 @@
 """ doc """
-from time import sleep
 import sys
 from PyQt5.QtWidgets import *
-from libcpu import DRCv2System
 from PyQt5.QtCore import QTimer
+from libcpu import DRCv2System
 
 
 class App(QMainWindow):
-    """ ewda """
+    """ Application GUI setup & functionalities. """
 
     def __init__(self):
         super().__init__()
 
-        self.run = False
+        # Initialize class fields.
+        self.sys0 = None
         self.program = []
         self.total_clk = 0
+        # Default program loaded on a startup.
         self.filename = "programs/mod_calc.a"
         self.old_mem_map = []
 
+        # Run GUI setup.
+        self.init_gui()
+
+        # Create clock.
+        self.clock = QTimer()
+        self.clock.timeout.connect(self.step)
+
+    def init_gui(self):
+        """ Create application window """
         ######################
-        # Creation of window elements
+        # Create window elements.
         ######################
-        # global
+
+        # 1) Global.
         title = 'DRC v.2 computer system emulator'
         window = QWidget()
 
+        # Main layout.
         layout0 = QHBoxLayout()
 
-        # devices column = QVBoxLayout()
-        dev_layout = QVBoxLayout()
-        # central column = QVBoxLayout()
-        c_layout = QVBoxLayout()
-        # controls area = QGridLayout()
+        dev_layout = QVBoxLayout()  # (devices)
+        c_layout = QVBoxLayout()    # (central)
+        cc_layout = QGridLayout()   # (clock controls)
+        cons_layout = QGridLayout() # (console)
 
-        # Bar
-        menuBar = self.menuBar()
-        fileMenu = menuBar.addMenu('File')
+        # 2) Bar.
+        menu_bar = self.menuBar()
+        file_menu = menu_bar.addMenu('File')
+        help_menu = menu_bar.addMenu('Help')
 
-        # actions
-        load_rom = QAction('Load program to ROM', self)
+        # 3) Bar elements actions.
+        load_rom = QAction('Load program', self)
         reset_system = QAction('Reset system', self)
         exit_program = QAction('Exit', self)
+        help_ = QAction('Help', self)
 
-        # Clock controls.
+        # 4) Clock controls.
         step_btn = QPushButton('Step', self)
+        step_btn.setToolTip("Increment system clock only by one.")
         self.start_btn = QPushButton('Start', self)
         self.stop_btn = QPushButton('Stop', self)
         self.freq_box = QDoubleSpinBox(self)
         self.clk_count = QLineEdit(self)
+        self.clk_count.setReadOnly(True)
+        freq_lbl = QLabel(self)
+        freq_lbl.setText("Frequency (Hz):")
+        cc_lbl = QLabel(self)
+        cc_lbl.setText("Clock controls")
+        tcp_lbl = QLabel(self)
+        tcp_lbl.setText("Clock ticks total:")
 
-        # Console.
+        # 5) Console.
         self.console_out = QLineEdit(self)
+        self.console_out.setReadOnly(True)
         self.console_in = QLineEdit(self)
         enter_btn = QPushButton('Enter', self)
+        enter_btn.setToolTip("Enter your input to console buffer.")
+        console_lbl = QLabel(self)
+        console_lbl.setText("Peripheral device 0x02 - console")
+        console_i_lbl = QLabel(self)
+        console_i_lbl.setText("Integer input:")
+        console_o_lbl = QLabel(self)
+        console_o_lbl.setText("Integer output:")
 
         # Core memory cell table.
         self.core_table = QTableWidget(self)
@@ -69,14 +98,11 @@ class App(QMainWindow):
         self.rom_table.setRowCount(256)
         self.rom_table.setColumnCount(1)
 
-        # Clock
-        self.clock = QTimer()
-        self.clock.timeout.connect(self.step)
+        ######################
+        # Stack them together.
+        ######################
 
-        ######################
-        # stacking them together
-        ######################
-        # Global
+        # 1) Global
         self.setCentralWidget(window)
         self.setWindowTitle(title)
 
@@ -86,35 +112,49 @@ class App(QMainWindow):
 
         window.setLayout(layout0)
 
-        # Devices layout.
-        dev_layout.addWidget(self.console_out)
-        dev_layout.addWidget(self.console_in)
-        dev_layout.addWidget(enter_btn)
+        # 2) Devices layout.
+        dev_layout.addLayout(cons_layout)
         dev_layout.addWidget(self.core_table)
 
-        # Central layout.
-        c_layout.addWidget(self.freq_box)
-        c_layout.addWidget(self.start_btn)
-        c_layout.addWidget(self.stop_btn)
-        c_layout.addWidget(step_btn)
-        c_layout.addWidget(self.clk_count)
+        # 3) Clock controls layout.
+        cc_layout.addWidget(cc_lbl, 0, 0, 1, 2)
+        cc_layout.addWidget(freq_lbl, 1, 0)
+        cc_layout.addWidget(self.freq_box, 1, 1)
+        cc_layout.addWidget(self.start_btn, 2, 0)
+        cc_layout.addWidget(self.stop_btn, 2, 1)
+        cc_layout.addWidget(step_btn, 3, 0, 1, 2)
+        cc_layout.addWidget(tcp_lbl, 4, 0)
+        cc_layout.addWidget(self.clk_count, 4, 1)
+
+        # 4) Console layout
+        cons_layout.addWidget(console_lbl, 0, 0, 1, 2)
+        cons_layout.addWidget(console_o_lbl, 1, 0,)
+        cons_layout.addWidget(self.console_out, 1, 1)
+        cons_layout.addWidget(console_i_lbl, 2, 0)
+        cons_layout.addWidget(self.console_in, 2, 1)
+        cons_layout.addWidget(enter_btn, 3, 0, 1, 2)
+
+        # 5) Central layout
+        c_layout.addLayout(cc_layout)
         c_layout.addWidget(self.reg_table)
 
-        # Bar
-        fileMenu.addAction(load_rom)
-        fileMenu.addAction(reset_system)
-        fileMenu.addAction(exit_program)
+        # 6) Bar
+        file_menu.addAction(load_rom)
+        file_menu.addAction(reset_system)
+        file_menu.addAction(exit_program)
+        help_menu.addAction(help_)
+
 
         ######################
-        # initial setup
+        # Initial setup
         ######################
         self.setGeometry(100, 100, 600, 600)
 
-        # set max value for spinbox.
+        # Set max value for spinbox.
         self.freq_box.setMaximum(50)
 
-        # initialize spinbox with some reasonable value.
-        self.freq_box.setValue(50)
+        # Initialize spinbox with some reasonable value.
+        self.freq_box.setValue(2)
 
         # Properly label memory table.
         tab = []
@@ -123,7 +163,7 @@ class App(QMainWindow):
         self.core_table.setVerticalHeaderLabels(tab)
         self.core_table.setHorizontalHeaderLabels(["Core memory"])
 
-        # Properly ROM table.
+        # Properly label ROM table.
         tab = []
         for i in range(256):
             tab.append(str(i))
@@ -131,7 +171,10 @@ class App(QMainWindow):
         self.rom_table.setHorizontalHeaderLabels(["Program memory"])
 
         # Properly label register table.
-        tab = ["R0", "R1", "R2", "R3", "R4", "R5", "R6", "SP", "PC", "ST"]
+        tab = ["Zero", "General purpose 1", "General purpose 2",
+               "General purpose 3", "General purpose 4", "General purpose 5",
+               "General purpose 6", "Stack Pointer", "Program Counter",
+               "Status"]
         self.reg_table.setVerticalHeaderLabels(tab)
         self.reg_table.setHorizontalHeaderLabels(["Registers"])
 
@@ -140,77 +183,80 @@ class App(QMainWindow):
         self.reg_table.setColumnWidth(0, 166)
         self.rom_table.setColumnWidth(0, 145)
 
-
         # Set stop button as pushed down,
         # because initially there is nothing to stop.
         self.stop_btn.setEnabled(False)
 
         ######################
-        # user input handling
+        # User input handling
         ######################
+
+        # Actions.
         exit_program.triggered.connect(self.exit_program)
         reset_system.triggered.connect(self.reset)
         load_rom.triggered.connect(self.load)
+        help_.triggered.connect(self.show_help)
 
+        # Buttons.
         step_btn.clicked.connect(self.step)
         self.start_btn.clicked.connect(self.start)
         self.stop_btn.clicked.connect(self.stop)
-
         enter_btn.clicked.connect(self.cons_enter)
 
         ######################
-
         self.initialize_core()
         self.show()
 
-    ######################
-    # methods
-    ######################
-
-    # Write user input into console buffer.
     def cons_enter(self):
+        """ Write user input into console buffer. """
         val = self.console_in.text()
         if val:
             val = int(val)
-        #  if val != "":
             self.sys0.devices[2].write(val)
         self.sys0.status_reg["wait_bit"] = False
 
-    # Load program.
     def load(self):
+        """ Load program. """
         options = QFileDialog.Options()
-        self.filename, _ = QFileDialog.getOpenFileName(self,
-                                "Select file...", "", options=options)
+        self.filename, _ = \
+            QFileDialog.getOpenFileName(self,
+                                        "Select file...", "", options=options)
         self.reset()
         self.update_contents()
 
-    # Start clock
     def start(self):
+        """ Start clock. """
         period = (1/self.freq_box.value())*1000
-        self.clock.start(period)
+        self.clock.start(int(period))
+
         self.start_btn.setEnabled(False)
         self.stop_btn.setEnabled(True)
 
-    # Stop clock.
     def stop(self):
+        """ Stop clock. """
         self.clock.stop()
+
         self.start_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
 
     def step(self):
+        """ Trigger one clock pulse. """
         self.sys0.get_next_state()
-        #  if self.sys0.program_counter
         self.update_contents()
-        if self.sys0.status_reg["halt_bit"] == True:
+
+        # But...
+        if self.sys0.status_reg["halt_bit"] is True:
             self.stop()
+        # Above is written to disable pointless clock ticking after halting.
+        # It also lets the user know how long computation took.
 
     def reset(self):
+        """ Reset system state. """
         del self.sys0
         self.total_clk = 0
         self.initialize_core()
         self.update_contents()
 
-    # initialize back-end
     def initialize_core(self):
         """ Start application back-end. """
         self.sys0 = DRCv2System()
@@ -221,11 +267,11 @@ class App(QMainWindow):
             for line in f:
                 self.program.append(line.strip())
 
-    # update contents
     def update_contents(self):
         """ Update back-end state with new parameters. """
 
         # Fill core memory table.
+        # Display an arrow pointing to the top of the stack.
         mem_tab = []
         for i in range(64, 256):
             if self.sys0.registers[7] == i:
@@ -240,14 +286,10 @@ class App(QMainWindow):
             last_written = self.sys0.last_written - 64
             self.core_table.selectRow(last_written)
 
-
         # Fill ROM display table.
         # Display an arrow pointing on the next instruction.
         tab = []
         for i in range(len(self.program)):
-            #  if i == self.sys0.program_counter:
-                #  tab.append(self.program[i] + "    <--")
-            #  else:
             tab.append(self.program[i])
 
         for i in range(len(tab)):
@@ -257,8 +299,10 @@ class App(QMainWindow):
 
         # Print out registers.
         for i in range(len(self.sys0.registers)):
-            self.reg_table.setItem(i, 0, QTableWidgetItem(str(self.sys0.registers[i])))
-        self.reg_table.setItem(8, 0, QTableWidgetItem(str(self.sys0.program_counter)))
+            reg = str(self.sys0.registers[i])
+            self.reg_table.setItem(i, 0, QTableWidgetItem(reg))
+        pc_txt = str(self.sys0.program_counter)
+        self.reg_table.setItem(8, 0, QTableWidgetItem(pc_txt))
 
         status_str = "h: "
         status_str += str(self.sys0.status_reg["halt_bit"])
@@ -268,30 +312,30 @@ class App(QMainWindow):
         status_str += str(self.sys0.status_reg["zero_flag"])
         self.reg_table.setItem(9, 0, QTableWidgetItem(status_str))
 
-        # Resize register table.
-        #  self.reg_table.resizeColumnsToContents()
-
         # Display console buffer contents.
         self.console_out.setText(str(self.sys0.devices[2].buffer[0]))
 
         # Display total clock cycles.
-        self.clk_count.setText(f"Clock ticks: {self.total_clk}")
+        self.clk_count.setText(str(self.total_clk))
         self.total_clk += 1
 
-    # exit
     def exit_program(self):
         """ Gracefully terminate app. """
         sys.exit(0)
 
-    # Prompt user for console input.
-    def prompt(self):
-        val, ok = QInputDialog().getInt(self, "Console",
-                                "Integer input:", QLineEdit.Normal)
-        if ok and val:
-            return(val)
-        return(-1)  # if smth gone wrong
+    def show_help(self):
+        """ Print out help file contents in a message box. """
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("Help")
+        msg.setStandardButtons(QMessageBox.Ok)
+        text_edit = QPlainTextEdit()
+        text = open('spec.txt').read()
+        text_edit.setPlainText(text)
+        msg.setText(text)
+        msg.exec_()
 
 
-app = QApplication(sys.argv)
+APP = QApplication(sys.argv)
 ex = App()
-app.exec_()
+APP.exec_()

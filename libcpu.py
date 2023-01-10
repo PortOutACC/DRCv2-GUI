@@ -1,9 +1,9 @@
-""" test libcpu """
+""" Code library for DRC v.2 computer system emulator. """
 from random import randint
 
 
 class DRCv2System():
-    """ doc """
+    """ Main DRC system class. """
     def __init__(self):
         self.program_counter = 0
         self.word_size = 8
@@ -18,7 +18,7 @@ class DRCv2System():
         self.ign_wait = False
 
     def initialise_devices(self):
-        """ doc """
+        """ Create 64 empty device nodes and 192 memory cells. """
         for i in range(64):
             self.devices.append(Device(f"dev{i}", False, None))
 
@@ -29,31 +29,32 @@ class DRCv2System():
             self.devices.append(Device(f"RAM cell {i-64}", False, None))
 
     def initialise_regs(self):
-        """ doc """
+        """ Create list representing general purpose register file. """
         i = 1
         while i < 8:
             self.registers.append(None)
             i += 1
         self.registers[7] = 0
         self.status_reg = {"halt_bit": False,
-                           "carry_flag": None, "zero_flag": None, "wait_bit": False}
+                           "carry_flag": None,
+                           "zero_flag": None,
+                           "wait_bit": False}
 
     def load_rom(self, filename):
-        """ doc """
+        """ Call load_program function. """
         try:
             self.program = load_program(self.word_size, filename)
         except FileNotFoundError:
             print(f"File {filename} not found!")
 
     def get_next_state(self):
-        """ doc """
+        """ Compute state of system on the next clock pulse. """
         self.registers[0] = 0
         instruction = self.program[self.program_counter]
         self.last_written = None
 
-        if self.status_reg["wait_bit"] == True:
+        if self.status_reg["wait_bit"] is True:
             return
-
 
         opcode = instruction["opcode"]
         dest = int(instruction["dest_reg"])
@@ -66,13 +67,15 @@ class DRCv2System():
             self.status_reg["halt_bit"] = True
 
         elif opcode == "ADD":
-            rslt = self.alu.add_(self.registers[src_a], imm | self.registers[src_b])
+            rslt = self.alu.add_(self.registers[src_a],
+                                 imm | self.registers[src_b])
             self.registers[dest] = rslt[0]
             self.status_reg["carry_flag"] = rslt[1]
             self.status_reg["zero_flag"] = rslt[2]
 
         elif opcode == "SUB":
-            rslt = self.alu.sub_(self.registers[src_a], imm | self.registers[src_b])
+            rslt = self.alu.sub_(self.registers[src_a],
+                                 imm | self.registers[src_b])
             self.registers[dest] = rslt[0]
             self.status_reg["carry_flag"] = rslt[1]
             self.status_reg["zero_flag"] = rslt[2]
@@ -90,7 +93,8 @@ class DRCv2System():
 
         elif opcode == "NOR":
             self.registers[dest] = \
-                self.alu.nor_(self.registers[src_a], imm | self.registers[src_b])
+                self.alu.nor_(self.registers[src_a],
+                              imm | self.registers[src_b])
 
         elif opcode == "AND":
             self.registers[dest] = \
@@ -105,8 +109,6 @@ class DRCv2System():
             self.registers[dest] = \
                 self.devices[addr].read()
             self.ign_wait = False
-
-
 
         elif opcode == "STR":
             addr = imm | self.registers[src_b]
@@ -127,7 +129,6 @@ class DRCv2System():
         self.program_counter = self.program_counter % (2**self.word_size)
         self.registers[0] = 0
 
-
     def dump_all(self):
         """ Print debug info to console. """
         print(f"PC: {self.program_counter}")
@@ -141,7 +142,7 @@ class DRCv2System():
 
 
 def load_program(bits=8, filename="test.a"):
-    """ d """
+    """ Read assembly file and turn it into list of instructions. """
     with open(filename, "r") as infile:
         lines = []
         for line in infile:
@@ -173,7 +174,7 @@ def load_program(bits=8, filename="test.a"):
 
 
 class Device():
-    """ doc """
+    """ Generic peripheral device representation. """
     def __init__(self, label="dev", ro=False, val=None):
         self.label = label
         self.readonly = ro
@@ -183,17 +184,17 @@ class Device():
         return self.label + ", value=" + str(self.val)
 
     def write(self, new_val):
-        """ doc """
+        """ Simulate writing to the device. """
         if not self.readonly:
             self.val = new_val
 
     def read(self):
-        """ doc """
+        """ Simulate reading from the device. """
         return self.val
 
 
 def truncate_numbers(data: int, word_length=8) -> int:
-    """ doc """
+    """ Make sure that given integer will fit in a 1 byte. """
     if data < 0:
         raise ValueError("This emulator does not \
 support negative values:", data)
@@ -203,12 +204,12 @@ support negative values:", data)
 
 
 class ALU():
-    """ doc """
+    """ Arithmetic and Logic Unit representation. """
     def __init__(self, bits=8):
         self.bits = bits
 
     def add_(self, a, b):
-        """ doc """
+        """ Add two arguments, check for overflow and zero-result. """
         carry, zero = False, False
         if a+b >= 2**self.bits:
             carry = True
@@ -218,7 +219,7 @@ class ALU():
         return result, carry, zero
 
     def sub_(self, a, b):
-        """ doc """
+        """ Subtract given numbers, check for overflow and zero-result. """
         b = 2**self.bits - b
         carry, zero = False, False
 
@@ -230,11 +231,11 @@ class ALU():
         return result, carry, zero
 
     def and_(self, a, b):
-        """ doc """
+        """ Return bitwise AND of given numbers. """
         return a & b
 
     def nor_(self, a, b):
-        """ doc """
+        """ Return bitwise OR of given numbers. """
         arg_a = str(bin(a))[2:].zfill(self.bits)
         arg_b = str(bin(b))[2:].zfill(self.bits)
         r = ""
@@ -247,16 +248,15 @@ class ALU():
         return r
 
     def rsh_(self, a):
-        """ doc """
+        """ Return value bit-shifted 1 to the right, check for underflow. """
         carry = False
         if a % 2 != 0:
             carry = True
-
         return a//2, carry
 
 
 def eval_cond(cnd: str, status_reg) -> bool:
-    """ doc """
+    """ Check if condition given in a instruction is true. """
     zero = status_reg["zero_flag"]
     carry = status_reg["carry_flag"]
     return (cnd == "0")\
@@ -270,7 +270,7 @@ def eval_cond(cnd: str, status_reg) -> bool:
 
 
 class Rng():
-    """ doc """
+    """ Random Number Generator device representation. """
     def __init__(self, label="RNG", bits=8):
         self.label = label
         self.bits = bits
@@ -279,16 +279,16 @@ class Rng():
         return self.label + ", value=random :)"
 
     def write(self, new_val):
-        """ doc """
+        """ Does nothing. """
         pass
 
     def read(self):
-        """ doc """
+        """ Return random number from <0, 255>. """
         return randint(0, 2**self.bits-1)
 
 
 class Console():
-    """ doc """
+    """ An integer console device representation. """
     def __init__(self, label="Console", bits=8):
         self.buffer = [None]
         self.label = label
@@ -299,49 +299,9 @@ class Console():
         return self.label + ": " + str(self.buffer[0])
 
     def read(self):
-        """ doc """
-        #  prompt = f"{self.label}: Type a number: "
-        #  inp = input(prompt)
-        #  inp = randint(0, 255) ######### TEMPORARY FIX!!!!!!
-        #  from app import App
-        #  inp = App.prompt()
-        #  inp = int(inp) % 2**self.bits
-        #  self.buffer.insert(0, inp)
+        """ Simulate reading from the console. """
         return self.buffer[0]
 
     def write(self, val):
-        """ doc """
+        """ Simulate writing to the console. """
         self.buffer.insert(0, val)
-
-    #  def dump_all(self):
-        #  """ doc """
-        #  for line in self.buffer:
-            #  print(line)
-
-
-# def dump_all_info():
-    # global devices, pc, registers, status, program
-    # print("executed:")
-    # print(program[pc])
-    # print("status reg:")
-    # print(status)
-    # print("devices:")
-    # for dev in devices:
-        # print(dev)
-    # print("regs:")
-    # for reg in registers:
-        # print(reg)
-
-
-# ADD
-# SUB
-# RSH
-# INC
-# DEC
-# NOR
-# AND
-# LOD
-# STR
-# IMM
-# MSC
-# BRNCH
