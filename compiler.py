@@ -1,37 +1,52 @@
 """ DRCv2 compiler main script. """
 
+from sys import argv
 from libcompiler import *
 
-
+# Directory to be searched for code libraries.
 LIB_DIR = "programs/"
+
 HEAP_START = 64
-#  STACK_START = 16
 DEVICES = {
     "%RNG": 40,
     "%NUMB": 2
 }
-FILENAME = "bubble_sort"
 
-code = load_file(f"programs/{FILENAME}.s")
-code = include_includes(code, LIB_DIR)
+FILENAME = "programs/bubble_sort.s"  # Default source file.
 
-for line in code:
+try:
+    FILENAME = argv[1]
+except IndexError:
+    print(f"No filename given. Defaulting to {FILENAME}")
+
+CODE = load_file(FILENAME)
+CODE = include_includes(CODE, LIB_DIR)
+
+# Print raw code.
+for line in CODE:
     print(line)
+
 print("==================================")
 
-code = remove_unneeded_stuff(code)
-code = translate_to_asm(code)
-code, labels = parse_labels(code)
-code = replace_labels(code, labels)
-code = replace_addresses(code, DEVICES, HEAP_START)
+CODE = remove_unneeded_stuff(CODE)
+CODE = translate_to_asm(CODE)
+CODE, LABELS = parse_labels(CODE)
+CODE = replace_labels(CODE, LABELS)
+CODE = replace_addresses(CODE, DEVICES, HEAP_START)
 
-for i in range(len(code)):
-    print(i, code[i])
+# Print assembler code.
+for i in range(len(CODE)):
+    print(i, CODE[i])
 print("==================================")
 
-
-if input("Save assembly? Y/n\n") != "n":
-    save_file(f"programs/{FILENAME}.a", code)
-    print("Saving assembly...")
+# Save assembly.
+try:
+    FILENAME = argv[2]
+    if input("Save assembly? Y/n\n") != "n":
+        save_file(FILENAME, CODE)
+        print("Saving assembly...")
+except Exception:
+    print("Save failed.")
+    quit(1)
 
 quit(0)

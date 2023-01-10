@@ -36,6 +36,7 @@ def remove_unneeded_stuff(code_in):
 
 
 def translate_to_asm(code_in: str) -> str:
+    """ Translate instructions to be directly supported by a target. """
     lbl = 343234
     code_out = []
     for line in code_in:
@@ -338,8 +339,8 @@ def include_includes(code_in, libdir):
             libname = libdir + line.split()[1]
             try:
                 with open(libname, "r") as lib:
-                    for line in lib:
-                        lib_code.append(line.strip())
+                    for lib_line in lib:
+                        lib_code.append(lib_line.strip())
             except FileNotFoundError:
                 print(f"File {libname} not found!")
                 quit(1)
