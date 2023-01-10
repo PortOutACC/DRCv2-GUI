@@ -1,0 +1,51 @@
+DRC v.2 virtual computer system overview
+
+Architecture: RISC, pure Harvard, general register, load-store.
+
+Data word size: 8 bit
+
+8 general purpose registers:
+    0x00 - always returns zero. Writing to it does nothing.
+    0x01:0x06 - do with them anything you need.
+    0x07 - g.p., but is commonly used as a stack pointer.
+
+CPU status register:
+    carry flag - indicates if last add/subtract/shift-right generated value overflow (or, respectively underflow in case of RSH).
+    zero flag - idicates if result of last ADD/SUB was equal to zero.
+    wait bit - when set to 1, CPU does nothing until it receives an "ready signal" prom a peripheral.
+    halt bit - when set to 0, CPU stops reacting on clock pulses and has to be externally reset in order to continue operation.
+
+Calling conventions recommnded for writing your own code:
+    R1, R2 - arguments passed to a function.
+    R1, R2 - arguments returned by a function.
+    R3:R5 - global variables, must be lef intact by a function call.
+    R6 - scratch register. Expect your data residing in R6 to be los after a function call.
+    R7 - stack pointer.
+
+Read-only program memory: up to 256 instructions.
+
+Included peripherals:
+    0x02 - integer console - print results or gather user input.
+    0x28 - random number generator.
+    0x40:0xFF - random access memory.
+
+Instruction format: opcode, dest_reg, src_a, src_b(pointer), immdiate, condition
+Directly supported instructions:
+# ADD
+# SUB
+# RSH
+# INC
+# DEC
+# NOR
+# AND
+# LOD
+# STR
+# IMM
+# MSC
+# BRNCH
+
+This document as an WiP. To use this emulator, you'll probably need to read about how computers work in general. I personally recommend Wikipedia - it has really good articles on this topic. Just type any phrase from abouve you don't understand into it's search engine.
+Examples:
+https://en.wikipedia.org/wiki/Call_stack
+https://en.wikipedia.org/wiki/Instruction_set_architecture
+https://en.wikipedia.org/wiki/Load%E2%80%93store_architecture

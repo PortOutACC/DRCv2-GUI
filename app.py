@@ -1,4 +1,4 @@
-""" doc """
+""" DRC v.2 emulator main script. """
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import QTimer
@@ -16,7 +16,7 @@ class App(QMainWindow):
         self.program = []
         self.total_clk = 0
         # Default program loaded on a startup.
-        self.filename = "programs/mod_calc.a"
+        self.filename = "programs/bubble_sort.a"
         self.old_mem_map = []
 
         # Run GUI setup.

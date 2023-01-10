@@ -1,10 +1,9 @@
 """ DRCv2 compiler main script. """
-
 from sys import argv
 from libcompiler import *
 
 # Directory to be searched for code libraries.
-LIB_DIR = "programs/"
+LIB_DIR = ""
 
 HEAP_START = 64
 DEVICES = {
@@ -16,7 +15,7 @@ FILENAME = "programs/bubble_sort.s"  # Default source file.
 
 try:
     FILENAME = argv[1]
-except IndexError:
+except Exception:
     print(f"No filename given. Defaulting to {FILENAME}")
 
 CODE = load_file(FILENAME)
