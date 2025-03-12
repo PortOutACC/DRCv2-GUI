@@ -36,7 +36,6 @@ def remove_unneeded_stuff(code_in):
 
 
 def translate_to_asm(code_in: str) -> str:
-    """ Translate instructions to be directly supported by a target. """
     lbl = 343234
     code_out = []
     for line in code_in:
@@ -145,8 +144,8 @@ def translate_to_asm(code_in: str) -> str:
         elif line[0] == "BGE":
             # sub 0 B C 0 0
             # brnch 0 0 0 A c
-            code_out.append(f"SUB 0 {line[2]} {line[3]} 0 0")
-            code_out.append(f"BRNCH 0 0 0 {line[1]} c")
+            code_out.append("SUB")
+            code_out.append("BRNCH")
 
     #  BRL = sub a b, nc and nz
         elif line[0] == "BRL":
@@ -265,9 +264,6 @@ def translate_to_asm(code_in: str) -> str:
             # msc 0 0 0 0 1
             code_out.append("MSC 0 0 0 0 1")
     #  CPY = lod, str
-        else:
-            print(f"not supported instruction!\n{line[0]}")
-            quit(1)
 #  MSC - set status bits - halt bit, ignore wait bit?, interrupt mask bit
 #  BRNCH - 7 conditions: z, nz, c, nc, nc&nz, c&z, c&nz,
     return code_out
@@ -342,8 +338,8 @@ def include_includes(code_in, libdir):
             libname = libdir + line.split()[1]
             try:
                 with open(libname, "r") as lib:
-                    for lib_line in lib:
-                        lib_code.append(lib_line.strip())
+                    for line in lib:
+                        lib_code.append(line.strip())
             except FileNotFoundError:
                 print(f"File {libname} not found!")
                 quit(1)

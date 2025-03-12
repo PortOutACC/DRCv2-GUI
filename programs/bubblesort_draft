@@ -1,0 +1,63 @@
+bubble sort
+
+initialize pointr R6 at M0
+imm r3 10
+
+.loop
+if r3 == z goto .end
+{
+    load R1 from rng
+    store R1 at location pointed by R6
+    dec R3
+    goto loop
+}
+.end
+halt
+
+R1, R2 - compared numbers
+R4 - bool - was changed
+
+
+R3 = 1  // bool
+
+.mainloop
+if R3 == 0
+    goto.end
+
+.smallerloop
+R6 = 4
+R3 = 0 //false
+
+if R6 = 13 //?
+    goto .mainloop
+
+R7 = inc R6
+
+R1 = lod(R6)
+R2 = lof(R7)
+
+if b >= a:
+    goto .good
+R3 = 1
+R1 --> str(R7)
+R2 --> str(R6)
+
+
+.good
+R6 = inc R6
+goto .smallerloop
+
+.end
+halt
+
+
+IMM R6 0 0 4 0
+IMM R3 0 0 10 0
+ADD 0 R3 0 0 0
+BRNCH 0 0 0 9 z
+LOD R1 0 0 3 0
+STR 0 R1 R6 0 0
+DEC R3 R3 0 0 0
+ADD 0 0 0 0
+BRNCH 0 0 0 3 nz
+MSC 0 0 0 0 1
